@@ -67,7 +67,7 @@ class RNN(object):
 
         prediction = tf.nn.in_top_k(self.logits, targets=tf.argmax(self.input_target, axis=-1), k=1)
         acc = tf.reduce_mean(tf.cast(prediction, dtype=tf.float32))
-        tf.summary.scalar(acc, name="acc")
+        tf.summary.scalar("acc", acc)
 
         return acc
 
@@ -76,13 +76,14 @@ class RNN(object):
 
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_target, name='entropy')
             loss = tf.reduce_mean(input_tensor=cross_entropy, name='entropy_mean')
-            tf.summary.scalar(loss, name="loss")
+            tf.summary.scalar("loss", loss)
             return loss
 
 
     def training(self):
-
-            return tf.train.AdamOptimizer(learning_rate=cfgs.LEARNING_RATE).minimize(self.loss)
+            global_step_update = tf.assign_add(self.global_step, 1)
+            with tf.control_dependencies([global_step_update]):
+                return tf.train.AdamOptimizer(learning_rate=cfgs.LEARNING_RATE).minimize(self.loss)
 
 
     def get_rnn_cell(self, num_units=128, activation='tanh'):
