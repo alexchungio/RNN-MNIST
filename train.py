@@ -12,6 +12,7 @@
 
 import os
 import tensorflow as tf
+from tqdm import tqdm
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
 
@@ -62,20 +63,20 @@ def main(argv):
         test_step_pre_epoch = mnist.test.num_examples // cfgs.BATCH_SIZE
 
         for epoch in range(1, cfgs.NUM_EPOCH+1):
-            for step in range(1, train_step_per_epoch+1):
+            train_bar = tqdm(range(1, train_step_per_epoch+1))
+            for step in train_bar:
                 x_train, y_train = mnist.train.next_batch(cfgs.BATCH_SIZE)
                 x_train = x_train.reshape(cfgs.BATCH_SIZE, cfgs.TIME_STEPS, cfgs.INPUT_SIZE)
                 feed_dict = model.fill_feed_dict(x_train, y_train, is_training=True)
                 summary, global_step, train_loss, train_acc, _ = sess.run([summary_op, model.global_step, model.loss, model.acc, model.train],
                                                                           feed_dict=feed_dict)
 
-                if step % cfgs.SHOW_TRAIN_INFO_INTE == 0:
-                    print("Epoch {0} : Step {1} => Train Loss: {2:.4f} | Train ACC: {3:.4f} ".format(epoch, step,
-                                                                                                    train_loss, train_acc))
                 if step % cfgs.SMRY_ITER == 0:
                     write.add_summary(summary=summary, global_step=global_step)
                     write.flush()
 
+                train_bar.set_description("Epoch {0} : Step {1} => Train Loss: {2:.4f} | Train ACC: {3:.4f}".
+                                          format(epoch, step, train_loss, train_acc))
             test_loss_list = []
             test_acc_list = []
             for step in range(test_step_pre_epoch):
@@ -94,6 +95,7 @@ def main(argv):
             saver.save(sess=sess, save_path=ckpt_file, global_step=global_step)
     sess.close()
     print('model training has complete')
+
 
 
 
