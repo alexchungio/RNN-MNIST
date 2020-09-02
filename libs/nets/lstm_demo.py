@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
         inputs = tf.placeholder(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32, name="inputs_1")
 
-        cells = [get_lstm_cell(num_units=NUM_UNITS) for _ in range(NUM_LAYERS)]
+        cells = [get_lstm_cell(num_units=NUM_MULTI_UNITS[i]) for i in range(NUM_LAYERS)]
 
         lstm_cells = tf.nn.rnn_cell.MultiRNNCell(cells=cells, state_is_tuple=True)
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
 
         inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32, name="inputs_1")
 
-        cells = [get_lstm_cell(num_units=NUM_UNITS) for _ in range(NUM_LAYERS)]
+        cells = [get_lstm_cell(num_units=NUM_MULTI_UNITS[i]) for i in range(NUM_LAYERS)]
 
         lstm_cells = tf.nn.rnn_cell.MultiRNNCell(cells=cells, state_is_tuple=True)
 
