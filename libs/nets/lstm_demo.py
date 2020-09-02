@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     inputs = tf.placeholder(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32, name="inputs_data")
 
-    h_0 =  lstm_cell.zero_state(batch_size=BATCH_SIZE, dtype=tf.float32)
+    state_0 =  lstm_cell.zero_state(batch_size=BATCH_SIZE, dtype=tf.float32)
     # ----------------- cell calculate step---------------------------------
     #  w_i => input_gate, w_j => input W_f => forget_gate, w_o => output_gate
     # input = (batch_size, input_size)
@@ -63,8 +63,154 @@ if __name__ == "__main__":
     # new_h = tf.multiply(tanh(new_c), sigmoid(new_O))
     # return new_h, tuple(new_h, new_c)
 
-    outputs, states = lstm_cell(inputs=inputs, state=h_0)  # outputs = states.h
+    outputs, states = lstm_cell(inputs=inputs, state=state_0)  # outputs = states.h
     print(outputs.shape)
     print(states.h.shape)
     print(states.c.shape)
+
+
+    # ------------------------------construct two step lstm------------------------------
+    tow_step_graph = tf.Graph()
+    with tow_step_graph.as_default():
+        lstm_cell = get_lstm_cell(num_units=NUM_UNITS)
+
+        input_1 = tf.placeholder(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32, name="inputs_1")
+        input_2 = tf.placeholder(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32, name="inputs_2")
+
+        state_0 = lstm_cell.zero_state(BATCH_SIZE, dtype=tf.float32)
+
+        output_1, state_1 = lstm_cell(inputs=input_1, state=state_0)
+
+        output_2, state_2 = lstm_cell(inputs=input_2, state=state_1)
+        print(output_2.shape)
+        print(state_2.h.shape)
+        print(state_2.c.shape)
+
+        input_step_batch_1 = tf.random_normal(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32)
+        input_step_batch_2 = tf.random_normal(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32)
+
+        init_op = tf.group(tf.global_variables_initializer(),
+                           tf.initialize_local_variables())
+
+    with tf.Session(graph=tow_step_graph) as sess:
+        sess.run(init_op)
+
+        for var in tf.global_variables():
+            print(var.op.name, var.shape)  # (input_size + num_units, num_units*4)
+
+        input_data_1 = input_step_batch_1.eval()
+        input_data_2 = input_step_batch_2.eval()
+
+        output_2, state_2 = sess.run([output_2, state_2], feed_dict={input_1: input_data_1,
+                                                           input_2: input_data_2})
+
+        assert (output_2 == state_2.h).all()  # h_2 == state_2.h
+        print('Two step test done !')
+
+        # ----------------------construct multi step lstm------------------------------
+        # tf.nn.dynamic_rnn
+        multi_step_graph = tf.Graph()
+        with multi_step_graph.as_default():
+            lstm_cell = get_lstm_cell(num_units=NUM_UNITS)
+
+            inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32, name="inputs_1")
+
+            state_0 = lstm_cell.zero_state(BATCH_SIZE, dtype=tf.float32)
+
+            outputs, states = tf.nn.dynamic_rnn(cell=lstm_cell, inputs=inputs, initial_state=state_0)
+
+            print(outputs.shape)
+            print(states.h.shape)
+            print(states.c.shape)
+
+            input_step_batch = tf.random_normal(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32)
+
+            init_op = tf.group(tf.global_variables_initializer(),
+                               tf.initialize_local_variables())
+
+        with tf.Session(graph=multi_step_graph) as sess:
+            sess.run(init_op)
+            for var in tf.global_variables():
+                print(var.op.name, var.shape)  # # (input_size + num_units, num_units*4)
+            input_data = input_step_batch.eval()
+
+            outputs, states = sess.run([outputs, states], feed_dict={inputs: input_data})
+            outputs_last_step = outputs[:, -1, :]
+            assert (outputs_last_step == states.h).all()  # h_2 == state_2.h
+            print('Multi step test done !')
+
+    # ----------------------construct multi layer lstm------------------------------
+    multi_layer_graph = tf.Graph()
+    with multi_layer_graph.as_default():
+
+        inputs = tf.placeholder(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32, name="inputs_1")
+
+        cells = [get_lstm_cell(num_units=NUM_UNITS) for _ in range(NUM_LAYERS)]
+
+        lstm_cells = tf.nn.rnn_cell.MultiRNNCell(cells=cells, state_is_tuple=True)
+
+        state_0 = lstm_cells.zero_state(BATCH_SIZE, dtype=tf.float32)
+
+        outputs, states = lstm_cells(inputs=inputs, state=state_0)
+
+        print(outputs.shape)
+        print(states[-1].h.shape)
+        print(states[-1].c.shape)
+
+        input_step_batch = tf.random_normal(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32)
+
+        init_op = tf.group(tf.global_variables_initializer(),
+                           tf.initialize_local_variables())
+
+    with tf.Session(graph=multi_layer_graph) as sess:
+        sess.run(init_op)
+        for var in tf.global_variables():
+            print(var.op.name, var.shape)  # # (input_size + num_units, num_units*4)
+        input_data = input_step_batch.eval()
+
+        outputs, states = sess.run([outputs, states], feed_dict={inputs: input_data})
+
+        assert (outputs == states[-1].h).all()  # h_2 == state_2.h
+        print('Multi layer test done !')
+
+    # ----------------------construct multi step multi layer lstm------------------------------
+    multi_step_multi_layer_graph = tf.Graph()
+    with multi_step_multi_layer_graph.as_default():
+
+        inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32, name="inputs_1")
+
+        cells = [get_lstm_cell(num_units=NUM_UNITS) for _ in range(NUM_LAYERS)]
+
+        lstm_cells = tf.nn.rnn_cell.MultiRNNCell(cells=cells, state_is_tuple=True)
+
+        state_0 = lstm_cells.zero_state(BATCH_SIZE, dtype=tf.float32)
+
+        outputs, states = tf.nn.dynamic_rnn(cell=lstm_cells, inputs=inputs, initial_state=state_0)
+
+        print(outputs.shape)
+        print(states[-1].h.shape)
+        print(states[-1].c.shape)
+
+        input_step_batch = tf.random_normal(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32)
+
+        init_op = tf.group(tf.global_variables_initializer(),
+                           tf.initialize_local_variables())
+
+    with tf.Session(graph=multi_step_multi_layer_graph) as sess:
+        sess.run(init_op)
+        for var in tf.global_variables():
+            print(var.op.name, var.shape)  # # (input_size + num_units, num_units*4)
+        input_data = input_step_batch.eval()
+
+        outputs, states = sess.run([outputs, states], feed_dict={inputs: input_data})
+
+        outputs_last_step = outputs[:, -1, :]
+        states_last_layer = states[-1]
+
+        assert (outputs_last_step == states_last_layer.h).all()  # h_2 == state_2.h
+        print('Multi step multi layer test done !')
+
+
+
+
 
