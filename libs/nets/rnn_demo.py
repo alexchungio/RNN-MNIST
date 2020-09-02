@@ -86,11 +86,11 @@ if __name__ == "__main__":
         input_step_1 = input_step_batch_1.eval()
         input_step_2 = input_step_batch_2.eval()
 
-        output_1, state_1, output_2, state_2 = sess.run([output_1, state_1, output_1, state_2],
+        output_1, state_1, output_2, state_2 = sess.run([output_1, state_1, output_2, state_2],
                                                         feed_dict={inputs_1: input_step_1, inputs_2:input_step_2})
 
-        assert output_1.all() == state_1.all()
-        assert output_2.all() == state_2.all()
+        assert (output_1 == state_1).all()
+        assert (output_2 == state_2).all()
         print('Done !')
 
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
         outputs, states = sess.run([outputs, states], feed_dict={inputs: input_data})
         outputs_last_step  = outputs[:, -1, :]
-        assert outputs_last_step.all() == states.all()
+        assert (outputs_last_step == states).all()
         print('Done !')
 
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
         input_data = input_batch.eval()
         outputs, states = sess.run([outputs, states], feed_dict={inputs: input_data})
-        assert outputs.all() == states[-1].all()
+        assert (outputs == states[-1]).all()
         print('Done !')
 
 
@@ -191,7 +191,8 @@ if __name__ == "__main__":
         outputs, states = sess.run([outputs, states], feed_dict={inputs: input_data})
         outputs_last_step  = outputs[:, -1, :]
         states_last_layer = states[-1]
-        assert outputs_last_step.all() == states_last_layer.all()
+
+        assert (outputs_last_step == states_last_layer).all()
         print('Done !')
 
 
