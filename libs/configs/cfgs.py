@@ -37,14 +37,12 @@ INFERENCE_IMAGE_PATH = ROOT_PATH + '/outputs/inference_image'
 TRAINED_CKPT = os.path.join(ROOT_PATH, 'outputs/trained_weights')
 EVALUATE_DIR = ROOT_PATH + '/outputs/evaluate_result'
 
-#------------------------data config--------------------------------
-
+#------------------------network config--------------------------------
 BATCH_SIZE = 32
 TIME_STEPS = 28  # number of sequence size
 INPUT_SIZE = 28 # the number in singe time dimension of a single sequence of input data
 NUM_UNITS = [128, 64, 32]
 NUM_LAYERS = 3
-
 
 #-------------------------train config-------------------------------
 LEARNING_RATE = 0.001
