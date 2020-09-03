@@ -15,7 +15,7 @@ import tensorflow as tf
 
 BATCH_SIZE = 32 # the batch size of input data
 INPUT_SIZE = 28 # the number in singe time dimension of a single sequence of input data
-EMBEDDING_SIZE = 128  # hide layer size
+NUM_UNITS = 128  # hide layer size
 TIME_STEPS = 10  # number of sequence size
 NUM_LAYERS = 3
 NUM_MULTI_UNITS = [64, 128, 256]
@@ -32,34 +32,48 @@ if __name__ == "__main__":
     # (output, cur_state) = cell.call(input, pre_state)
     # eg -> (y_1, h_1) = cell.call(x_1, h_0)
 
+    # --------------- test BasicRNNCell-------------
+    rnn_cell = tf.nn.rnn_cell.BasicRNNCell(num_units=128, activation='tanh')
+    print(rnn_cell.state_size)  # 128
+
+    # --------------- construct two time RNN net work------------------------------
+    # output_1, state_1 = rnn_cell.__call__(inputs=inputs, state=h_0)
+
+    inputs = tf.placeholder(shape=(32, INPUT_SIZE), dtype=tf.float32)
+
+    state_0 = rnn_cell.zero_state(BATCH_SIZE, dtype=tf.float32)  # get initial state h_0 of all zeros
+
+    # ----------------- cell calculate step---------------------------------
+    # output = new_state = act(W * input + U * state + B)
+    # input = (batch_size, input_size)
+    # state = (batch_size, num_units)
+    # W = (input_size, num_units)
+    # U = (num_units, num_units)
+    # B = (batch_size, num_units)
+    # output_size = tf.matmul(input,  W) + tf.matmul(state, U) + B
+    # = (batch_size, num_units) + (batch_size, num_units) + (batch_size, num_units) = (batch_size, num_units)
+    # ------------------- real calculate step---------------
+    # kernel = np.concat((W, U), axis=0)=>([input_size + num_units, num_units])
+    # inputs = tf.concat((input, state), axis=1) => (batch_size, input_size + num_inputs)
+    # bias = (batch_size, num_units)
+    # output_size = tf.matmul(input, kernel) + bias = (batch_size, num_units) + (batch_size, num_units) => (batch_size, num_units)
+    output_1, state_1 = rnn_cell(inputs=inputs, state=state_0)  # output = new_state
+    print(output_1.shape)
+    print(state_1.shape)
+
+    # --------------- construct two time RNN net work------------------------------
     two_step_graph = tf.Graph()
     with two_step_graph.as_default():
-
         #--------------- test BasicRNNCell-------------
         rnn_cell =  tf.nn.rnn_cell.BasicRNNCell(num_units=128, activation='tanh')
         print(rnn_cell.state_size)  # 128
 
-        # --------------- construct two time RNN net work------------------------------
+
         # output_1, state_1 = rnn_cell.__call__(inputs=inputs, state=h_0)
 
         inputs_1 = tf.placeholder(shape=(32, INPUT_SIZE), dtype=tf.float32)
 
         h_0 = rnn_cell.zero_state(BATCH_SIZE, dtype=tf.float32)  # get initial state h_0 of all zeros
-
-        #----------------- cell calculate step---------------------------------
-        # output = new_state = act(W * input + U * state + B)
-        # input = (batch_size, input_size)
-        # state = (batch_size, num_units)
-        # W = (input_size, num_units)
-        # U = (num_units, num_units)
-        # B = (batch_size, num_units)
-        # output_size = tf.matmul(input,  W) + tf.matmul(state, U) + B
-        # = (batch_size, num_units) + (batch_size, num_units) + (batch_size, num_units) = (batch_size, num_units)
-        # ------------------- real calculate step---------------
-        # kernel = np.concat((W, U), axis=0)=>([input_size + num_units, num_units])
-        # inputs = tf.concat((input, state), axis=1) => (batch_size, input_size + num_inputs)
-        # bias = (batch_size, num_units)
-        # output_size = tf.matmul(input, kernel) + bias = (batch_size, num_units) + (batch_size, num_units) => (batch_size, num_units)
         output_1, state_1 = rnn_cell(inputs=inputs_1, state=h_0)  # output = new_state
         print(output_1.shape)
         print(state_1.shape)
@@ -94,11 +108,11 @@ if __name__ == "__main__":
         print('Done !')
 
 
-    # construct multi step graph
+    # --------------------------construct multi step graph---------------------------------------
     multi_step_graph = tf.Graph()
     with multi_step_graph.as_default():
         inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32)
-        rnn_cell =  tf.nn.rnn_cell.BasicRNNCell(num_units=EMBEDDING_SIZE, activation='tanh')
+        rnn_cell =  tf.nn.rnn_cell.BasicRNNCell(num_units=NUM_UNITS, activation='tanh')
         initial_state = rnn_cell.zero_state(BATCH_SIZE, dtype=tf.float32)
         outputs, states = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=inputs, initial_state=initial_state)
         print(outputs.shape) # all steps outputs
@@ -122,7 +136,7 @@ if __name__ == "__main__":
         print('Done !')
 
 
-    # construct multi layer graph
+    # -------------------------construct multi layer graph----------------------------
     multi_layer_graph = tf.Graph()
     with multi_layer_graph.as_default():
         inputs = tf.placeholder(shape=(BATCH_SIZE, INPUT_SIZE), dtype=tf.float32)
@@ -198,14 +212,13 @@ if __name__ == "__main__":
         print('Done !')
 
 
-    # ---------------construct bidirectional RNN---------------
-
+    # ---------------------------construct bidirectional RNN-------------------------------
     # from tensorflow.python.ops.rnn import bidirectional_dynamic_rnn
     bidirectional_graph = tf.Graph()
 
     with bidirectional_graph.as_default():
-        cell_forward = get_rnn_cell(EMBEDDING_SIZE)
-        cell_backward = get_rnn_cell(EMBEDDING_SIZE)
+        cell_forward = get_rnn_cell(NUM_UNITS)
+        cell_backward = get_rnn_cell(NUM_UNITS)
 
         inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32, name="input_data")
 
