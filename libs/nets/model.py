@@ -11,13 +11,11 @@
 #-------------------------------------------------------
 #  add  from tensorflow.python.ops.rnn import dynamic_rnn to tensorflow/nn/__init__.py
 
-import tensorflow as tf
-
+import tensorflow.compat.v1 as tf
 from libs.configs import cfgs
 
 class RNN(object):
     def __init__(self, input_size=28, time_steps=28, num_layers=3, num_units=None, num_outputs=10):
-
 
         self.input_size = input_size
         self.time_steps= time_steps
@@ -28,6 +26,8 @@ class RNN(object):
 
         self.input_data = tf.placeholder(shape=(None, time_steps, input_size), dtype=tf.float32, name="input_data")
         self.input_target = tf.placeholder(shape=(None, num_outputs), dtype=tf.float32, name="input_target")
+        self.keep_prob = tf.placeholder(shape=(), dtype=tf.float32, name="keep_prob")
+
         self.global_step = tf.train.get_or_create_global_step()
         self.inference = self.forward()
         self.loss = self.losses()
@@ -37,7 +37,10 @@ class RNN(object):
     def forward(self):
 
         # rnn cell
-        cells = [self.get_rnn_cell(self.num_units[i]) for i in range(self.num_layers)]
+        cells = [tf.nn.rnn_cell.DropoutWrapper(self.get_rnn_cell(self.num_units[i]),
+                                               input_keep_prob=self.keep_prob,
+                                               output_keep_prob=self.keep_prob)
+                 for i in range(self.num_layers)]
 
         rnn_cells = tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
         # print(rnn_cells.state_size)  # (64, 128, 256)
@@ -51,16 +54,13 @@ class RNN(object):
 
         # self.logits = tf.nn.softmax(logits=outputs, name="logits")
 
-    def fill_feed_dict(self, input_data, input_target, is_training=False):
-        if is_training:
-            feed_dict = {
-                self.input_data: input_data,
-                self.input_target: input_target
-            }
-        else:
-            feed_dict = {
-                self.input_data: input_data
-            }
+    def fill_feed_dict(self, input_data, input_target=None,  keep_prob=1.0):
+
+        feed_dict = {
+            self.input_data: input_data,
+            self.input_target: input_target,
+            self.keep_prob: keep_prob
+        }
         return feed_dict
 
     def accuracy(self):

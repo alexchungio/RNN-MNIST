@@ -49,3 +49,4 @@ NUM_LAYERS = 3
 #-------------------------train config-------------------------------
 LEARNING_RATE = 0.001
 NUM_EPOCH = 5
+KEPP_PROB = 0.8
