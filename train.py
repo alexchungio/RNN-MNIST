@@ -11,7 +11,7 @@
 #-------------------------------------------------------
 
 import os
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from tqdm import tqdm
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
@@ -41,7 +41,6 @@ def main(argv):
     # config.gpu_options.per_process_gpu_memory_fraction = 0.5  # maximun alloc gpu50% of MEM
     config.gpu_options.allow_growth = True
 
-
     init_op = tf.group(
         tf.global_variables_initializer(),
         tf.local_variables_initializer()
@@ -67,10 +66,9 @@ def main(argv):
             for step in train_bar:
                 x_train, y_train = mnist.train.next_batch(cfgs.BATCH_SIZE)
                 x_train = x_train.reshape(cfgs.BATCH_SIZE, cfgs.TIME_STEPS, cfgs.INPUT_SIZE)
-                feed_dict = model.fill_feed_dict(x_train, y_train, is_training=True)
+                feed_dict = model.fill_feed_dict(x_train, y_train, keep_prob=cfgs.KEPP_PROB)
                 summary, global_step, train_loss, train_acc, _ = sess.run([summary_op, model.global_step, model.loss, model.acc, model.train],
                                                                           feed_dict=feed_dict)
-
                 if step % cfgs.SMRY_ITER == 0:
                     write.add_summary(summary=summary, global_step=global_step)
                     write.flush()
@@ -82,7 +80,7 @@ def main(argv):
             for step in range(test_step_pre_epoch):
                 x_test, y_test = mnist.test.next_batch(cfgs.BATCH_SIZE)
                 x_test = x_test.reshape(cfgs.BATCH_SIZE, cfgs.TIME_STEPS, cfgs.INPUT_SIZE)
-                feed_dict = model.fill_feed_dict(x_test, y_test, is_training=True)
+                feed_dict = model.fill_feed_dict(x_test, y_test, keep_prob=1.0)
 
                 test_loss, test_acc, _ = sess.run([model.loss, model.acc, model.train], feed_dict=feed_dict)
                 test_loss_list.append(test_loss)
@@ -95,8 +93,6 @@ def main(argv):
             saver.save(sess=sess, save_path=ckpt_file, global_step=global_step)
     sess.close()
     print('model training has complete')
-
-
 
 
 if __name__ == "__main__":
