@@ -15,7 +15,7 @@ import tensorflow as tf
 
 BATCH_SIZE = 32 # the batch size of input data
 INPUT_SIZE = 28 # the number in singe time dimension of a single sequence of input data
-NUM_UNITS = 128  # hide layer size
+EMBEDDING_SIZE = 128  # hide layer size
 TIME_STEPS = 10  # number of sequence size
 NUM_LAYERS = 3
 NUM_MULTI_UNITS = [64, 128, 256]
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     multi_step_graph = tf.Graph()
     with multi_step_graph.as_default():
         inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32)
-        rnn_cell =  tf.nn.rnn_cell.BasicRNNCell(num_units=NUM_UNITS, activation='tanh')
+        rnn_cell =  tf.nn.rnn_cell.BasicRNNCell(num_units=EMBEDDING_SIZE, activation='tanh')
         initial_state = rnn_cell.zero_state(BATCH_SIZE, dtype=tf.float32)
         outputs, states = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=inputs, initial_state=initial_state)
         print(outputs.shape) # all steps outputs
@@ -170,7 +170,9 @@ if __name__ == "__main__":
         print(rnn_cells.state_size)  # (64, 128, 256)
         initial_state = rnn_cells.zero_state(BATCH_SIZE, dtype=tf.float32)
 
-        outputs, states = tf.nn.dynamic_rnn(cell=rnn_cells, inputs=inputs, initial_state=initial_state)
+        outputs, states = tf.nn.dynamic_rnn(cell=rnn_cells,
+                                            inputs=inputs,
+                                            initial_state=initial_state)
         print(outputs.shape)  # (32, 256)
         print(states[0].shape, states[1].shape, states[2].shape)  # (32, 64) (32, 128) (32, 256)
 
@@ -196,6 +198,55 @@ if __name__ == "__main__":
         print('Done !')
 
 
+    # ---------------construct bidirectional RNN---------------
+
+    # from tensorflow.python.ops.rnn import bidirectional_dynamic_rnn
+    bidirectional_graph = tf.Graph()
+
+    with bidirectional_graph.as_default():
+        cell_forward = get_rnn_cell(EMBEDDING_SIZE)
+        cell_backward = get_rnn_cell(EMBEDDING_SIZE)
+
+        inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32, name="input_data")
+
+        status_forward = cell_forward.zero_state(BATCH_SIZE, dtype=tf.float32)
+        status_backward = cell_backward.zero_state(BATCH_SIZE, dtype=tf.float32)
+
+        (fw_outputs, bw_outputs), (fw_status, bw_status) = tf.nn.bidirectional_dynamic_rnn(cell_fw=cell_forward,
+                                                          cell_bw=cell_backward,
+                                                          initial_state_fw=status_forward,
+                                                          initial_state_bw=status_backward,
+                                                          inputs=inputs)
+
+        print(fw_outputs.shape)
+        print(bw_outputs.shape)
+        print(fw_status.shape)
+        print(bw_status.shape)
+
+        input_batch = tf.random_normal(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32)
+
+        init_op = tf.global_variables_initializer()
+
+    with tf.Session(graph=bidirectional_graph) as sess:
+
+        sess.run(init_op)
+
+        for var in tf.global_variables():
+            print(var.op.name, var.shape)
+
+        input_data = input_batch.eval()
+
+        fw_outputs, bw_outputs, fw_status, bw_status = sess.run([fw_outputs, bw_outputs, fw_status, bw_status],
+                                                                feed_dict={inputs: input_data})
+        fw_output_first_step = fw_outputs[:, 0, :]
+        fw_output_last_step  = fw_outputs[:, -1, :]
+
+        bw_output_first_step = bw_outputs[:, 0, :]
+        bw_output_last_step = bw_outputs[:, -1, :]
+
+        assert (fw_output_last_step == fw_status).all()
+        assert (bw_output_first_step == bw_status).all()
+        print('Done !')
 
 
 
