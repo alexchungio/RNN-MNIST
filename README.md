@@ -13,7 +13,10 @@ Try to predict handwritten digit with RNN
 
 ## Result
 
-![acc](./docs/acc.png) ![loss](./docs/loss.png)
+
+![acc](./docs/loss.png)      |  ![](./docs/acc.png)
+:-------------------------:|:-------------------------:
+Displayed Loss on Tensorboard |  Displayed Accuracy on Tensorboard
 
 ```
 Epoch 1 : Step 1718 => Train Loss: 0.1850 | Train ACC: 0.9375: 100%|██████████| 1718/1718 [00:24<00:00, 69.04it/s]
