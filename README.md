@@ -18,7 +18,7 @@ Try to predict handwritten digit with RNN
 <center>
 <figure>
 <img src="https://github.com/alexchungio/RNN-MNIST/blob/master/docs/loss.png" />
-  </br>
+  
 <img src="https://github.com/alexchungio/RNN-MNIST/blob/master/docs/acc.png" />
 </figure>
 </center>
