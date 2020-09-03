@@ -241,7 +241,7 @@ if __name__ == "__main__":
         fw_output_first_step = fw_outputs[:, 0, :]
         fw_output_last_step  = fw_outputs[:, -1, :]
 
-        bw_output_first_step = bw_outputs[:, 0, :]
+        bw_output_first_step = bw_outputs[:, 0, :]  # due to output reverse to recover normal sequence
         bw_output_last_step = bw_outputs[:, -1, :]
 
         assert (fw_output_last_step == fw_status).all()
