@@ -210,6 +210,63 @@ if __name__ == "__main__":
         assert (outputs_last_step == states_last_layer.h).all()  # h_2 == state_2.h
         print('Multi step multi layer test done !')
 
+    # ---------------construct bidirectional LSTM---------------
+
+    # from tensorflow.python.ops.rnn import bidirectional_dynamic_rnn
+    bidirectional_graph = tf.Graph()
+
+    with bidirectional_graph.as_default():
+        cell_forward = get_lstm_cell(NUM_UNITS)
+        cell_backward = get_lstm_cell(NUM_UNITS)
+
+        inputs = tf.placeholder(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32, name="input_data")
+
+        status_forward = cell_forward.zero_state(BATCH_SIZE, dtype=tf.float32)
+        status_backward = cell_backward.zero_state(BATCH_SIZE, dtype=tf.float32)
+
+        (fw_outputs, bw_outputs), (fw_status, bw_status) = tf.nn.bidirectional_dynamic_rnn(cell_fw=cell_forward,
+                                                                                           cell_bw=cell_backward,
+                                                                                           initial_state_fw=status_forward,
+                                                                                           initial_state_bw=status_backward,
+                                                                                           inputs=inputs)
+
+        print(fw_outputs.shape)
+        print(bw_outputs.shape)
+        print(fw_status.h.shape)
+        print(fw_status.c.shape)
+        print(bw_status.h.shape)
+        print(bw_status.c.shape)
+
+        input_batch = tf.random_normal(shape=(BATCH_SIZE, TIME_STEPS, INPUT_SIZE), dtype=tf.float32)
+
+        init_op = tf.global_variables_initializer()
+
+    with tf.Session(graph=bidirectional_graph) as sess:
+
+        sess.run(init_op)
+
+        for var in tf.global_variables():
+            print(var.op.name, var.shape)
+
+        input_data = input_batch.eval()
+
+        fw_outputs, bw_outputs, fw_status, bw_status = sess.run([fw_outputs, bw_outputs, fw_status, bw_status],
+                                                                feed_dict={inputs: input_data})
+        fw_output_first_step = fw_outputs[:, 0, :]
+        fw_output_last_step = fw_outputs[:, -1, :]
+        fw_h = fw_status.h
+        fw_c = fw_status.c
+
+        bw_output_first_step = bw_outputs[:, 0, :]  # due to output reverse to recover normal sequence
+        bw_output_last_step = bw_outputs[:, -1, :]
+        bw_h = bw_status.h
+        bw_c = bw_status.c
+
+        assert (fw_output_last_step == fw_h).all()
+        assert (bw_output_first_step == bw_h).all()
+        print('Done !')
+
+
 
 
 
