@@ -1,5 +1,5 @@
 # RNN-MNIST
-try to predict  handwritten digit by RNN
+Try to predict handwritten digit with RNN
 
 ## Config
 * LEARNING_RATE = 0.001
